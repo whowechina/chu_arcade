@@ -66,23 +66,33 @@ void report_usb_hid()
 static void gen_joy_report()
 {
     hid_joy.buttons[0] = 0;
-    hid_joy.system_status = 0x0;
-/*    
-    hid_joy.buttons[0] = (air_bitmap() << 8) | air_bitmap();
-    hid_joy.buttons[1] = hid_joy.buttons[0] << 3;
+
     if (button_pressed(0)) {
-        hid_joy.buttons[0] |= 1;
-        hid_joy.buttons[1] |= 1;
+        hid_joy.buttons[0] |= 1 << 9;
     }
     if (button_pressed(1)) {
-        hid_joy.buttons[0] |= 2;
-        hid_joy.buttons[1] |= 2;
+        hid_joy.buttons[0] |= 1 << 6;
     }
     if (button_pressed(2)) {
-        hid_joy.buttons[0] |= 4;
-        hid_joy.buttons[1] |= 4;
+        hid_joy.chutes[0] += 0x100;
     }
-*/
+
+    uint16_t air[6][2] = {
+        { 1 << 13, 0 },
+        { 0, 1 << 13 },
+        { 1 << 12, 0 },
+        { 0, 1 << 12 },
+        { 1 << 11, 0 },
+        { 0, 1 << 11 },
+    };
+
+    uint8_t airkey = air_bitmap();
+    for (int i = 0; i < 6; i++) {
+        if (airkey & (1 << i)) {
+            hid_joy.buttons[0] |= air[i][0];
+            hid_joy.buttons[1] |= air[i][1];
+        }
+    }
 }
 
 const uint8_t keycode_table[128][2] = { HID_ASCII_TO_KEYCODE };
@@ -190,11 +200,31 @@ void slider_init()
     uart_init(SLIDER_UART, 115200);
 }
 
+void update_check()
+{
+    uint8_t pins[] = BUTTON_DEF;
+
+    for (int i = 0; i < sizeof(pins); i++) {
+        uint8_t gpio = pins[i];
+        gpio_init(gpio);
+        gpio_set_function(gpio, GPIO_FUNC_SIO);
+        gpio_set_dir(gpio, GPIO_IN);
+        gpio_pull_up(gpio);
+        sleep_ms(1);
+        if (button_pressed(i)) {
+            sleep_ms(100);
+            reset_usb_boot(0, 2);
+        }
+    }
+}
+
 void init()
 {
     sleep_ms(50);
     set_sys_clock_khz(180000, true);
     board_init();
+    update_check();
+
     tusb_init();
     stdio_init_all();
 
@@ -211,7 +241,7 @@ void init()
 
     cli_init("chu_arcade>", "\n   << Chu Arcade Controller >>\n"
                             " https://github.com/whowechina\n\n");
-    
+
     commands_init();
 }
 
@@ -234,11 +264,38 @@ uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id,
     return 0;
 }
 
+typedef struct __attribute__((packed)) {
+    uint8_t report_id;
+    uint8_t cmd;
+    uint8_t payload[62];
+} hid_output_t;
+
 // Invoked when received SET_REPORT control request or
 // received data on OUT endpoint ( Report ID = 0, Type = 0 )
 void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
                            hid_report_type_t report_type, uint8_t const *buffer,
                            uint16_t bufsize)
 {
-    printf("Get from USB %d-%d, %02x %02x\n", report_id, report_type, buffer[0], buffer[1]);
+    if (report_id != REPORT_ID_OUTPUT) {
+        return;
+    }
+
+    hid_output_t *output = (hid_output_t *)buffer;
+    switch (output->cmd) {
+        case 0x01:
+        case 0x02:
+            hid_joy.system_status = 0x30;
+            break;
+        case 0x03:
+            hid_joy.chutes[0] = 0;
+            hid_joy.chutes[1] = 0;
+            hid_joy.system_status = 0;
+            break;
+        case 0x41:
+            break;
+        default:
+            printf("USB Cmd: %02x\n", output->cmd);
+            break;
+        break;
+    }
 }
