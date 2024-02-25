@@ -1,0 +1,6 @@
+build
+pico-examples
+pico-sdk
+.vscode
+*-backups
+Production/PCB/*
