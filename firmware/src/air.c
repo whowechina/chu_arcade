@@ -103,6 +103,11 @@ unsigned air_value(uint8_t index)
     if (index >= sizeof(TOF_LIST)) {
         return 0;
     }
+
+    if (!dist_valid(distances[index])) {
+        return 0;
+    }
+
     uint8_t bitmap = air_bits(distances[index]);
 
     for (int i = 0; i < 6; i++) {

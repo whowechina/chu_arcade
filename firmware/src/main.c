@@ -66,6 +66,7 @@ void report_usb_hid()
 static void gen_joy_report()
 {
     hid_joy.buttons[0] = 0;
+    hid_joy.buttons[1] = 0;
 
     if (button_pressed(0)) {
         hid_joy.buttons[0] |= 1 << 9;
@@ -73,22 +74,26 @@ static void gen_joy_report()
     if (button_pressed(1)) {
         hid_joy.buttons[0] |= 1 << 6;
     }
-    if (button_pressed(2)) {
+
+    static bool last_coin_pressed = false;
+    bool coin_pressed = button_pressed(2);
+    if (coin_pressed && !last_coin_pressed) {
         hid_joy.chutes[0] += 0x100;
     }
+    last_coin_pressed = coin_pressed;
 
     uint16_t air[6][2] = {
-        { 1 << 13, 0 },
         { 0, 1 << 13 },
-        { 1 << 12, 0 },
+        { 1 << 13, 0 },
         { 0, 1 << 12 },
-        { 1 << 11, 0 },
+        { 1 << 12, 0 },
         { 0, 1 << 11 },
+        { 1 << 11, 0 },
     };
 
     uint8_t airkey = air_bitmap();
     for (int i = 0; i < 6; i++) {
-        if (airkey & (1 << i)) {
+        if (~airkey & (1 << i)) {
             hid_joy.buttons[0] |= air[i][0];
             hid_joy.buttons[1] |= air[i][1];
         }
@@ -276,11 +281,11 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
                            hid_report_type_t report_type, uint8_t const *buffer,
                            uint16_t bufsize)
 {
-    if (report_id != REPORT_ID_OUTPUT) {
+    hid_output_t *output = (hid_output_t *)buffer;
+    if (output->report_id != REPORT_ID_OUTPUT) {
         return;
     }
 
-    hid_output_t *output = (hid_output_t *)buffer;
     switch (output->cmd) {
         case 0x01:
         case 0x02:
@@ -290,11 +295,13 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id,
             hid_joy.chutes[0] = 0;
             hid_joy.chutes[1] = 0;
             hid_joy.system_status = 0;
+            printf("IO4 reset.\n");
             break;
+        case 0x04:
         case 0x41:
             break;
         default:
-            printf("USB Cmd: %02x\n", output->cmd);
+            printf("IO4 unknown cmd: %02x\n", output->cmd);
             break;
         break;
     }
