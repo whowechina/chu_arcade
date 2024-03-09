@@ -64,10 +64,9 @@ static inline uint8_t air_bits(int dist)
 {
     int offset= chu_cfg->tof.offset * 10;
     int pitch = chu_cfg->tof.pitch * 10;
-    int bit1 = (dist - offset) / pitch;
-    int bit2 = (dist - offset + pitch / 2) / pitch;
+    int bit = (dist - offset) / pitch;
     
-    return ((1 << bit1) | (1 << bit2)) & 0x3f;
+    return (1 << bit) & 0x3f;
 }
 
 static inline bool dist_valid(int dist)

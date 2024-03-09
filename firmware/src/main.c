@@ -83,12 +83,12 @@ static void gen_joy_report()
     last_coin_pressed = coin_pressed;
 
     uint16_t air[6][2] = {
-        { 0, 1 << 13 },
         { 1 << 13, 0 },
-        { 0, 1 << 12 },
+        { 0, 1 << 13 },
         { 1 << 12, 0 },
-        { 0, 1 << 11 },
+        { 0, 1 << 12 },
         { 1 << 11, 0 },
+        { 0, 1 << 11 },
     };
 
     uint8_t airkey = air_bitmap();

@@ -8,7 +8,7 @@
 #define I2C_PORT i2c1
 #define I2C_SDA 26
 #define I2C_SCL 27
-#define I2C_FREQ 1333*1000
+#define I2C_FREQ 1367*1000
 
 #define TOF_MUX_LIST { 3, 4, 5, 2, 1, 0, 11, 12, 13, 10, 9, 8}
 
