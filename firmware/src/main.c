@@ -28,7 +28,6 @@
 #include "config.h"
 #include "cli.h"
 #include "commands.h"
-#include "aime.h"
 
 #include "air.h"
 #include "rgb.h"
@@ -131,19 +130,6 @@ static void run_lights()
             rgb_set_color(i, colors[d]);
         }
     }
-
-    uint32_t aime_color = aime_led_color();
-    if (aime_color > 0) {
-        uint8_t r = aime_color >> 16;
-        uint8_t g = aime_color >> 8;
-        uint8_t b = aime_color;
-
-        uint32_t blink = now / 100000;
-        aime_color = (blink & 1) ? rgb32(r, g, b, false) : 0;
-
-//        rgb_set_color(34, aime_color);
-//        rgb_set_color(35, aime_color);
-    }
 }
 
 void bridge_slider_port()
@@ -241,8 +227,6 @@ void init()
     rgb_init();
     button_init();
     slider_init();
-
-    aime_init(1);
 
     cli_init("chu_arcade>", "\n   << Chu Arcade Controller >>\n"
                             " https://github.com/whowechina\n\n");
