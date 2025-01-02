@@ -18,6 +18,7 @@
 #include "hardware/uart.h"
 #include "hardware/structs/ioqspi.h"
 #include "hardware/structs/sio.h"
+#include "hardware/clocks.h"
 
 #include "tusb.h"
 #include "usb_descriptors.h"
